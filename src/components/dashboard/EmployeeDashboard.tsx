@@ -53,7 +53,7 @@ export const EmployeeDashboard = () => {
         .from('leave_balances')
         .select('*')
         .eq('employee_id', user.id)
-        .single();
+        .maybeSingle();
 
       setLeaveRequests(requests || []);
       setLeaveBalance(balance);
