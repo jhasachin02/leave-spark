@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      leave_balances: {
+        Row: {
+          annual_leave: number
+          created_at: string
+          employee_id: string
+          id: string
+          personal_leave: number
+          sick_leave: number
+          updated_at: string
+        }
+        Insert: {
+          annual_leave?: number
+          created_at?: string
+          employee_id: string
+          id?: string
+          personal_leave?: number
+          sick_leave?: number
+          updated_at?: string
+        }
+        Update: {
+          annual_leave?: number
+          created_at?: string
+          employee_id?: string
+          id?: string
+          personal_leave?: number
+          sick_leave?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       leave_requests: {
         Row: {
           created_at: string | null
