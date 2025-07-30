@@ -47,9 +47,7 @@ npm run build
 - `src/integrations/supabase/` - Supabase client and types
 - `public/` - Static assets (favicon, images)
 
-## Customization
-- Update the favicon by replacing `public/favicon.io.png`.
-- Edit `index.html` for meta tags and branding.
+
 
 ## License
 MIT
