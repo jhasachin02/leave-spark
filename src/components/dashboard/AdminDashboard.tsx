@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { Calendar, Users, Clock, CheckCircle, XCircle, AlertCircle, Filter } from "lucide-react";
 import { LeaveCalendar } from "./LeaveCalendar";
 
@@ -52,55 +52,49 @@ export const AdminDashboard = () => {
 
   const fetchData = async () => {
     try {
-      // In a real app, this would fetch from Supabase
-      // For now, we'll use mock data
-      const mockRequests: LeaveRequest[] = [
-        {
-          id: '1',
-          employee_id: 'emp1',
-          employee_name: 'John Doe',
-          leave_type: 'annual_leave',
-          start_date: '2024-02-15',
-          end_date: '2024-02-20',
-          reason: 'Family vacation',
-          status: 'pending',
-          created_at: '2024-02-01T10:00:00Z',
-          days_requested: 6,
-        },
-        {
-          id: '2',
-          employee_id: 'emp2',
-          employee_name: 'Jane Smith',
-          leave_type: 'sick_leave',
-          start_date: '2024-02-10',
-          end_date: '2024-02-12',
-          reason: 'Medical appointment',
-          status: 'approved',
-          created_at: '2024-02-08T14:30:00Z',
-          days_requested: 3,
-        },
-        {
-          id: '3',
-          employee_id: 'emp3',
-          employee_name: 'Mike Johnson',
-          leave_type: 'personal_leave',
-          start_date: '2024-02-25',
-          end_date: '2024-02-25',
-          reason: 'Personal matters',
-          status: 'rejected',
-          created_at: '2024-02-20T09:15:00Z',
-          days_requested: 1,
-        },
-      ];
+      // Fetch all leave requests
+      const { data: requests, error: requestsError } = await supabase
+        .from('leave_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      setLeaveRequests(mockRequests);
+      if (requestsError) throw requestsError;
+
+      // Fetch all profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name');
+
+      if (profilesError) throw profilesError;
+
+      // Create a map for quick profile lookup
+      const profileMap = new Map();
+      profiles?.forEach(profile => {
+        profileMap.set(profile.user_id, profile.full_name || 'Unknown Employee');
+      });
+
+      // Transform the data to match our interface
+      const transformedRequests: LeaveRequest[] = (requests || []).map(request => ({
+        id: request.id,
+        employee_id: request.employee_id,
+        employee_name: profileMap.get(request.employee_id) || 'Unknown Employee',
+        leave_type: request.leave_type,
+        start_date: request.start_date,
+        end_date: request.end_date,
+        reason: request.reason || '',
+        status: request.status as 'pending' | 'approved' | 'rejected',
+        created_at: request.created_at,
+        days_requested: request.days_requested || 0,
+      }));
+
+      setLeaveRequests(transformedRequests);
       
       // Calculate stats
       const stats = {
-        total_requests: mockRequests.length,
-        pending_requests: mockRequests.filter(r => r.status === 'pending').length,
-        approved_requests: mockRequests.filter(r => r.status === 'approved').length,
-        rejected_requests: mockRequests.filter(r => r.status === 'rejected').length,
+        total_requests: transformedRequests.length,
+        pending_requests: transformedRequests.filter(r => r.status === 'pending').length,
+        approved_requests: transformedRequests.filter(r => r.status === 'approved').length,
+        rejected_requests: transformedRequests.filter(r => r.status === 'rejected').length,
       };
       setStats(stats);
     } catch (error: any) {
@@ -124,7 +118,15 @@ export const AdminDashboard = () => {
 
   const handleStatusUpdate = async (requestId: string, newStatus: 'approved' | 'rejected') => {
     try {
-      // In a real app, this would update in Supabase
+      // Update the status in Supabase
+      const { error } = await supabase
+        .from('leave_requests')
+        .update({ status: newStatus })
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      // Update local state
       setLeaveRequests(prev => 
         prev.map(request => 
           request.id === requestId ? { ...request, status: newStatus } : request
