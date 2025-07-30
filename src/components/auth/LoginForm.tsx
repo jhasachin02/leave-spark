@@ -35,8 +35,8 @@ export const LoginForm = ({ onToggleMode }: LoginFormProps) => {
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
-        .eq('id', data.user.id)
-        .single();
+        .eq('user_id', data.user.id)
+        .maybeSingle();
 
       toast({
         title: "Welcome back!",
@@ -44,7 +44,7 @@ export const LoginForm = ({ onToggleMode }: LoginFormProps) => {
       });
 
       // Redirect based on role
-      if (profile?.role === 'admin') {
+      if (profile && profile.role === 'admin') {
         navigate('/dashboard/admin');
       } else {
         navigate('/dashboard/employee');
